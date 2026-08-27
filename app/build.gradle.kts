@@ -24,8 +24,8 @@ android {
         applicationId = "com.muhan.notes"
         minSdk = 25
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.3.0-beta"
+        versionCode = 7
+        versionName = "1.3.1-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

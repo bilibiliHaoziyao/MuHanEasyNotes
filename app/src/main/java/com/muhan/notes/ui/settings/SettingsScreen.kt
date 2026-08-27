@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoFixHigh
@@ -16,10 +17,14 @@ import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Chip
+import androidx.wear.compose.material.ChipColors
 import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.InlineSlider
@@ -77,95 +82,51 @@ fun SettingsScreen(
                 )
             }
             item {
-                Chip(
+                SettingChip(
+                    label = if (autoSave) "自动保存：开" else "自动保存：关",
+                    icon = Icons.Rounded.AutoFixHigh,
                     onClick = { onAutoSaveChange(!autoSave) },
-                    label = {
-                        Text(text = if (autoSave) "自动保存：开" else "自动保存：关")
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Rounded.AutoFixHigh,
-                            contentDescription = null,
-                            tint = if (autoSave) MaterialTheme.colors.primary
-                            else MaterialTheme.colors.onSurfaceVariant
-                        )
-                    },
+                    iconTint = if (autoSave) MaterialTheme.colors.primary
+                    else MaterialTheme.colors.onSurfaceVariant,
                     colors = if (autoSave) ChipDefaults.secondaryChipColors()
-                    else ChipDefaults.primaryChipColors(),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    else ChipDefaults.primaryChipColors()
                 )
             }
             item {
-                Chip(
+                SettingChip(
+                    label = if (hasPrivacyPassword) "隐私中心（已设置密码）" else "隐私中心（设置密码）",
+                    icon = Icons.Rounded.Lock,
                     onClick = onOpenPrivacy,
-                    label = {
-                        Text(text = if (hasPrivacyPassword) "隐私中心（已设置密码）" else "隐私中心（设置密码）")
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Lock,
-                            contentDescription = null,
-                            tint = if (hasPrivacyPassword) MaterialTheme.colors.primary
-                            else MaterialTheme.colors.onSurfaceVariant
-                        )
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    iconTint = if (hasPrivacyPassword) MaterialTheme.colors.primary
+                    else MaterialTheme.colors.onSurfaceVariant
                 )
             }
             item {
-                Chip(
-                    onClick = onOpenTrash,
-                    label = { Text(text = "回收站") },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Rounded.DeleteSweep,
-                            contentDescription = null,
-                            tint = MaterialTheme.colors.onSurfaceVariant
-                        )
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                SettingChip(
+                    label = "回收站",
+                    icon = Icons.Rounded.DeleteSweep,
+                    onClick = onOpenTrash
                 )
             }
             item {
-                Chip(
-                    onClick = onOpenBackup,
-                    label = { Text(text = "备份与恢复") },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Backup,
-                            contentDescription = null,
-                            tint = MaterialTheme.colors.onSurfaceVariant
-                        )
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                SettingChip(
+                    label = "备份与恢复",
+                    icon = Icons.Rounded.Backup,
+                    onClick = onOpenBackup
                 )
             }
             item {
-                Chip(
-                    onClick = onOpenSync,
-                    label = { Text(text = "多设备同步") },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Sync,
-                            contentDescription = null,
-                            tint = MaterialTheme.colors.onSurfaceVariant
-                        )
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                SettingChip(
+                    label = "多设备同步",
+                    icon = Icons.Rounded.Sync,
+                    onClick = onOpenSync
                 )
             }
             item {
-                Chip(
-                    onClick = onOpenAbout,
-                    label = { Text(text = "关于") },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colors.onSurfaceVariant
-                        )
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                SettingChip(
+                    label = "关于",
+                    icon = Icons.Rounded.Info,
+                    onClick = onOpenAbout
                 )
             }
         }
@@ -217,4 +178,42 @@ private fun SettingSlider(
             valueRange = SettingsViewModel.MIN_SCALE..SettingsViewModel.MAX_SCALE
         )
     }
+}
+
+/**
+ * 统一样式的设置项：占满整行（与滑块设置项同宽），
+ * 文字单行省略，避免窄屏上文字与图标重叠。
+ */
+@Composable
+private fun SettingChip(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    iconTint: Color = MaterialTheme.colors.onSurfaceVariant,
+    colors: ChipColors = ChipDefaults.primaryChipColors()
+) {
+    Chip(
+        onClick = onClick,
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.body1,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                softWrap = false
+            )
+        },
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(ChipDefaults.IconSize)
+            )
+        },
+        colors = colors,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+    )
 }

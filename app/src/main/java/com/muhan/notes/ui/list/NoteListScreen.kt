@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -132,7 +133,15 @@ fun NoteListScreen(
                         contentColor = MaterialTheme.colors.onError
                     )
                 ) {
-                    Text(text = "删除（到回收站）", style = MaterialTheme.typography.button)
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = null
+                    )
+                    Text(
+                        text = "删除（到回收站）",
+                        style = MaterialTheme.typography.button,
+                        modifier = Modifier.padding(start = 6.dp)
+                    )
                 }
                 Button(
                     onClick = { noteMenuTarget = null },
