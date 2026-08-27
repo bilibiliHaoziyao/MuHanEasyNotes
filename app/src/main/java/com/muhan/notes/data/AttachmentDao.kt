@@ -14,6 +14,10 @@ interface AttachmentDao {
     @Query("SELECT * FROM attachments WHERE id = :id")
     suspend fun getById(id: Long): Attachment?
 
+    /** 全部附件（用于备份导出） */
+    @Query("SELECT * FROM attachments ORDER BY id ASC")
+    suspend fun getAll(): List<Attachment>
+
     @Insert
     suspend fun insert(attachment: Attachment): Long
 

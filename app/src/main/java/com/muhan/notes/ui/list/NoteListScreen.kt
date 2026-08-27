@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +43,8 @@ import com.muhan.notes.ui.components.NoteCard
 
 /**
  * 笔记列表页：顶部标题 + 全部笔记卡片 + 底部新建按钮。
- * 点击卡片编辑，长按卡片删除。无顶栏沉浸显示。
+ * 点击卡片编辑；长按卡片弹出菜单（加入隐私中心 / 删除）；
+ * 点击设置键进设置；长按设置键进入隐私中心。
  */
 @Composable
 fun NoteListScreen(
@@ -50,10 +52,12 @@ fun NoteListScreen(
     onOpenNote: (Long) -> Unit,
     onNewNote: () -> Unit,
     onDelete: (Long) -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onOpenPrivacy: () -> Unit,
+    onSetPrivate: (Long, Boolean) -> Unit
 ) {
     val listState = rememberScalingLazyListState()
-    var deleteTarget by remember { mutableStateOf<Note?>(null) }
+    var noteMenuTarget by remember { mutableStateOf<Note?>(null) }
 
     Scaffold(
         positionIndicator = {
@@ -66,7 +70,7 @@ fun NoteListScreen(
             modifier = Modifier.fillMaxSize(),
             state = listState
         ) {
-            item { AppHeader(onOpenSettings = onOpenSettings) }
+            item { AppHeader(onOpenSettings = onOpenSettings, onOpenPrivacy = onOpenPrivacy) }
             if (notes.isEmpty()) {
                 item { EmptyHint() }
             }
@@ -74,7 +78,7 @@ fun NoteListScreen(
                 NoteCard(
                     note = note,
                     onClick = { onOpenNote(note.id) },
-                    onLongClick = { deleteTarget = note },
+                    onLongClick = { noteMenuTarget = note },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
@@ -84,44 +88,57 @@ fun NoteListScreen(
         }
     }
 
-    deleteTarget?.let { note ->
-        Dialog(onDismissRequest = { deleteTarget = null }) {
+    noteMenuTarget?.let { note ->
+        Dialog(onDismissRequest = { noteMenuTarget = null }) {
             Column(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colors.surface)
-                    .padding(16.dp),
+                    .padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "删除笔记",
+                    text = "「${note.title.ifBlank { "无标题" }}」",
                     style = MaterialTheme.typography.title3,
-                    color = MaterialTheme.colors.onSurface
+                    color = MaterialTheme.colors.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
-                Spacer(modifier = Modifier.padding(top = 8.dp))
-                Text(
-                    text = "确定要删除「${note.title.ifBlank { "无标题" }}」吗？",
-                    style = MaterialTheme.typography.body2,
-                    color = MaterialTheme.colors.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.padding(top = 12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { deleteTarget = null }) {
-                        Text(text = "取消", style = MaterialTheme.typography.button)
-                    }
-                    Button(
-                        onClick = {
-                            onDelete(note.id)
-                            deleteTarget = null
-                        },
-                        colors = ButtonDefaults.primaryButtonColors(
-                            backgroundColor = MaterialTheme.colors.error,
-                            contentColor = MaterialTheme.colors.onError
-                        )
-                    ) {
-                        Text(text = "删除", style = MaterialTheme.typography.button)
-                    }
+                Button(
+                    onClick = {
+                        onSetPrivate(note.id, true)
+                        noteMenuTarget = null
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.VisibilityOff,
+                        contentDescription = null
+                    )
+                    Text(
+                        text = "加入隐私中心",
+                        style = MaterialTheme.typography.button,
+                        modifier = Modifier.padding(start = 6.dp)
+                    )
+                }
+                Button(
+                    onClick = {
+                        onDelete(note.id)
+                        noteMenuTarget = null
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    colors = ButtonDefaults.primaryButtonColors(
+                        backgroundColor = MaterialTheme.colors.error,
+                        contentColor = MaterialTheme.colors.onError
+                    )
+                ) {
+                    Text(text = "删除（到回收站）", style = MaterialTheme.typography.button)
+                }
+                Button(
+                    onClick = { noteMenuTarget = null },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Text(text = "取消", style = MaterialTheme.typography.button)
                 }
             }
         }
@@ -129,7 +146,7 @@ fun NoteListScreen(
 }
 
 @Composable
-private fun AppHeader(onOpenSettings: () -> Unit) {
+private fun AppHeader(onOpenSettings: () -> Unit, onOpenPrivacy: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -151,8 +168,9 @@ private fun AppHeader(onOpenSettings: () -> Unit) {
         )
         AppIconButton(
             icon = Icons.Rounded.Settings,
-            contentDescription = "设置",
-            onClick = onOpenSettings
+            contentDescription = "设置（长按进入隐私中心）",
+            onClick = onOpenSettings,
+            onLongClick = onOpenPrivacy
         )
     }
 }

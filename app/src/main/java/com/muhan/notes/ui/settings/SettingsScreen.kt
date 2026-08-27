@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material.icons.rounded.Backup
+import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,16 +31,22 @@ import com.muhan.notes.ui.components.AppIconButton
 import kotlin.math.roundToInt
 
 /**
- * 设置页：调整界面缩放大小、字体大小、自动保存开关，以及关于页入口。
+ * 设置页：调整界面缩放大小、字体大小、自动保存开关；
+ * 隐私中心 / 回收站 / 备份与恢复 / 多设备同步入口；关于页。
  */
 @Composable
 fun SettingsScreen(
     uiScale: Float,
     fontScale: Float,
     autoSave: Boolean,
+    hasPrivacyPassword: Boolean,
     onUiScaleChange: (Float) -> Unit,
     onFontScaleChange: (Float) -> Unit,
     onAutoSaveChange: (Boolean) -> Unit,
+    onOpenPrivacy: () -> Unit,
+    onOpenTrash: () -> Unit,
+    onOpenBackup: () -> Unit,
+    onOpenSync: () -> Unit,
     onOpenAbout: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -82,6 +92,65 @@ fun SettingsScreen(
                     },
                     colors = if (autoSave) ChipDefaults.secondaryChipColors()
                     else ChipDefaults.primaryChipColors(),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+            item {
+                Chip(
+                    onClick = onOpenPrivacy,
+                    label = {
+                        Text(text = if (hasPrivacyPassword) "隐私中心（已设置密码）" else "隐私中心（设置密码）")
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Lock,
+                            contentDescription = null,
+                            tint = if (hasPrivacyPassword) MaterialTheme.colors.primary
+                            else MaterialTheme.colors.onSurfaceVariant
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+            item {
+                Chip(
+                    onClick = onOpenTrash,
+                    label = { Text(text = "回收站") },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.DeleteSweep,
+                            contentDescription = null,
+                            tint = MaterialTheme.colors.onSurfaceVariant
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+            item {
+                Chip(
+                    onClick = onOpenBackup,
+                    label = { Text(text = "备份与恢复") },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Backup,
+                            contentDescription = null,
+                            tint = MaterialTheme.colors.onSurfaceVariant
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+            item {
+                Chip(
+                    onClick = onOpenSync,
+                    label = { Text(text = "多设备同步") },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Sync,
+                            contentDescription = null,
+                            tint = MaterialTheme.colors.onSurfaceVariant
+                        )
+                    },
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
             }

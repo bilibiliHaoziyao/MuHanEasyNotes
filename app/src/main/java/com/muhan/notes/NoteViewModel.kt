@@ -1,7 +1,6 @@
 package com.muhan.notes
 
 import android.app.Application
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -11,6 +10,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.muhan.notes.data.Attachment
 import com.muhan.notes.data.AttachmentStorage
 import com.muhan.notes.data.AudioRecorder
+import com.muhan.notes.data.BackupManager
 import com.muhan.notes.data.Note
 import com.muhan.notes.data.NoteDatabase
 import com.muhan.notes.data.NoteRepository
@@ -20,37 +20,49 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 
 class NoteViewModel(
     private val context: Application,
     private val repository: NoteRepository
 ) : ViewModel() {
 
-    /** 全部笔记：置顶优先、按更新时间倒序 */
+    /** 主列表：正常且非隐私的笔记，置顶优先、按更新时间倒序 */
     val notes: StateFlow<List<Note>> = repository.notes.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = emptyList()
     )
 
-    /** 软件内录音器（按需创建，进程存活期间可复用） */
+    /** 隐私中心：正常且隐私的笔记 */
+    val privateNotes: StateFlow<List<Note>> = repository.privateNotes.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList()
+    )
+
+    /** 回收站：已删除的笔记 */
+    val trashedNotes: StateFlow<List<Note>> = repository.trashedNotes.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = emptyList()
+    )
+
+    // ------------------------------------------------------------------
+    // 软件内录音
+    // ------------------------------------------------------------------
+
     private var recorder: AudioRecorder? = null
 
     fun audioRecorder(): AudioRecorder = recorder ?: AudioRecorder(context).also { recorder = it }
 
-    /** 是否正在录音（供界面显示录音中状态） */
     private val _isRecording = MutableStateFlow(false)
     val isRecording: StateFlow<Boolean> = _isRecording.asStateFlow()
 
-    /** 开始软件内录音 */
     fun startRecording() {
         _isRecording.value = audioRecorder().start()
     }
 
-    /**
-     * 停止录音。录音文件写入应用私有目录后，通过 [onResult] 回传路径（失败为 null），
-     * 由界面决定是否挂到当前笔记上。
-     */
     fun stopRecording(onResult: (String?) -> Unit) {
         viewModelScope.launch {
             val path = audioRecorder().stop()
@@ -59,21 +71,19 @@ class NoteViewModel(
         }
     }
 
-    /** 放弃当前录音（删除临时文件） */
     fun cancelRecording() {
         audioRecorder().cancel()
         _isRecording.value = false
     }
 
+    // ------------------------------------------------------------------
+    // 笔记基础操作
+    // ------------------------------------------------------------------
+
     suspend fun getNote(id: Long): Note? = repository.getNote(id)
 
     suspend fun getAttachments(noteId: Long): List<Attachment> = repository.getAttachments(noteId)
 
-    /**
-     * 统一的新建/更新：已存在则更新，否则插入。
-     * 标题可选：未填写标题时，自动取正文第一句话作为标题。
-     * 返回保存后笔记的 id。
-     */
     suspend fun saveNote(
         existing: Note?,
         title: String,
@@ -104,12 +114,27 @@ class NoteViewModel(
         }
     }
 
+    /** 删除笔记：移入回收站（软删除，附件保留） */
     fun deleteNote(id: Long) {
+        viewModelScope.launch { repository.moveToTrash(id) }
+    }
+
+    /** 彻底删除（回收站内）：先删附件文件，再删记录（attachments 行级联删除） */
+    fun purgeNote(id: Long) {
         viewModelScope.launch {
-            // 先删物理文件，再删数据库记录（attachments 行由外键级联删除）
             repository.getAttachments(id).forEach { AttachmentStorage.deleteFile(it.filePath) }
             repository.deleteNote(id)
         }
+    }
+
+    /** 从回收站恢复 */
+    fun restoreFromTrash(id: Long) {
+        viewModelScope.launch { repository.restoreFromTrash(id) }
+    }
+
+    /** 加入 / 移出隐私中心 */
+    fun setPrivate(id: Long, isPrivate: Boolean) {
+        viewModelScope.launch { repository.setPrivate(id, isPrivate) }
     }
 
     fun togglePin(note: Note) {
@@ -118,7 +143,6 @@ class NoteViewModel(
         }
     }
 
-    /** 触碰笔记：仅刷新 updatedAt（添加附件后让笔记在列表中置前） */
     fun touchNote(id: Long) {
         viewModelScope.launch {
             val note = repository.getNote(id) ?: return@launch
@@ -126,7 +150,6 @@ class NoteViewModel(
         }
     }
 
-    /** 复制外部 Uri 媒体到应用私有目录并写入附件记录 */
     fun addAttachment(noteId: Long, type: String, uri: Uri) {
         viewModelScope.launch {
             val path = AttachmentStorage.copyFromUri(context, type, uri) ?: return@launch
@@ -136,7 +159,6 @@ class NoteViewModel(
         }
     }
 
-    /** 新增一条已经录好/保存好的本地媒体文件 */
     fun addLocalAttachment(noteId: Long, type: String, filePath: String) {
         viewModelScope.launch {
             if (filePath.isBlank()) return@launch
@@ -152,6 +174,114 @@ class NoteViewModel(
             AttachmentStorage.deleteFile(attachment.filePath)
             repository.deleteAttachment(id)
         }
+    }
+
+    // ------------------------------------------------------------------
+    // 本地备份 / 恢复
+    // ------------------------------------------------------------------
+
+    /** 执行本地备份，完成后回传 zip 文件（失败为 null） */
+    fun exportBackup(onDone: (File?) -> Unit) {
+        viewModelScope.launch { onDone(BackupManager.export(context, repository)) }
+    }
+
+    /** 列出应用 backups 目录下的历史备份 */
+    fun listLocalBackups(): List<File> =
+        File(context.filesDir, "backups")
+            .listFiles { f -> f.isFile && f.name.endsWith(".zip") }
+            ?.sortedByDescending { it.lastModified() }
+            ?: emptyList()
+
+    fun restoreLocalBackup(file: File, onDone: (Int) -> Unit) {
+        viewModelScope.launch {
+            onDone(BackupManager.restoreFromFile(context, repository, file))
+        }
+    }
+
+    fun restoreFromUri(uri: Uri, onDone: (Int) -> Unit) {
+        viewModelScope.launch {
+            onDone(BackupManager.restoreFromUri(context, repository, context.contentResolver, uri))
+        }
+    }
+
+    /** 把备份 zip 写入 SAF 提供的 Uri（导出到文件） */
+    fun writeExportZipToUri(uri: Uri, onDone: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val ok = context.contentResolver.openOutputStream(uri)?.let { out ->
+                BackupManager.writeExportZip(context, repository, out)
+            } ?: false
+            onDone(ok)
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // WebDAV 备份 / 恢复
+    // ------------------------------------------------------------------
+
+    fun webdavUpload(url: String, user: String, pass: String, onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            val zip = BackupManager.export(context, repository)
+            if (zip == null) {
+                onDone("备份生成失败")
+                return@launch
+            }
+            onDone(
+                if (BackupManager.webdavUpload(url, user, pass, zip)) "上传成功"
+                else "上传失败，请检查地址与账号"
+            )
+        }
+    }
+
+    fun webdavDownload(url: String, user: String, pass: String, onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            val dest = File(context.cacheDir, "webdav_backup.zip")
+            if (!BackupManager.webdavDownload(url, user, pass, dest)) {
+                onDone("下载失败，请检查地址与账号")
+                return@launch
+            }
+            val added = BackupManager.restoreFromFile(context, repository, dest)
+            dest.delete()
+            onDone("恢复完成，新增笔记 $added 条")
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 多设备同步（局域网 / 蓝牙）
+    // ------------------------------------------------------------------
+
+    private val _syncStatus = MutableStateFlow("")
+    val syncStatus: StateFlow<String> = _syncStatus.asStateFlow()
+
+    fun lanHost() {
+        viewModelScope.launch {
+            _syncStatus.value = "正在启动…"
+            BackupManager.lanHost(context, repository) { _syncStatus.value = it }
+        }
+    }
+
+    fun lanConnect(hostIp: String) {
+        viewModelScope.launch {
+            _syncStatus.value = "正在启动…"
+            BackupManager.lanConnect(context, repository, hostIp) { _syncStatus.value = it }
+        }
+    }
+
+    fun bluetoothHost() {
+        viewModelScope.launch {
+            _syncStatus.value = "正在启动…"
+            BackupManager.bluetoothHost(context, repository) { _syncStatus.value = it }
+        }
+    }
+
+    fun bluetoothConnect(address: String) {
+        viewModelScope.launch {
+            _syncStatus.value = "正在启动…"
+            BackupManager.bluetoothConnect(context, repository, address) { _syncStatus.value = it }
+        }
+    }
+
+    fun resetSyncStatus() {
+        _syncStatus.value = ""
     }
 
     companion object {
