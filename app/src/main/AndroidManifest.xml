@@ -14,9 +14,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MuHanEasyNotes">
 
+        <!-- com.google.android.wearable 为 Google 提供库；小米澎湃 OS（无 GMS）没有此库，
+             设为 required=false 以兼容安装（本应用不使用 Wearable 数据层 API） -->
         <uses-library
             android:name="com.google.android.wearable"
-            android:required="true" />
+            android:required="false" />
 
         <activity
             android:name=".MainActivity"
