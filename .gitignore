@@ -12,3 +12,6 @@ app/build
 # Release 签名文件（保密）
 app/release.keystore
 app/keystore.properties
+
+# Kotlin build session
+.kotlin/
