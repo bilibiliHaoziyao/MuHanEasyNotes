@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Wear OS 应用通常使用设备默认主题，配合 Compose 全屏渲染 -->
+    <style name="Theme.MuHanEasyNotes" parent="android:Theme.DeviceDefault" />
+</resources>
