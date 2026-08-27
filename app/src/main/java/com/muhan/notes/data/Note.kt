@@ -8,6 +8,8 @@ import androidx.room.PrimaryKey
  *
  * @property color 笔记的强调色（ARGB 值），用于列表展示与编辑页配色
  * @property isPinned 是否置顶（小米便签中的“收藏/置顶”）
+ * @property isPrivate 是否在隐私中心（1.3：长按笔记可加入隐私中心）
+ * @property deletedAt 移入回收站的时间；null 表示正常，非 null 表示在回收站
  */
 @Entity(tableName = "notes")
 data class Note(
@@ -17,6 +19,8 @@ data class Note(
     val content: String = "",
     val color: Long = DEFAULT_COLOR,
     val isPinned: Boolean = false,
+    val isPrivate: Boolean = false,
+    val deletedAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 ) {
