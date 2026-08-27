@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Settings
@@ -38,6 +39,7 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
@@ -197,14 +199,46 @@ fun PrivacyCenterScreen(
                         changePassword = true
                     },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                ) { Text("修改密码") }
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Lock,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "修改密码",
+                            style = MaterialTheme.typography.button,
+                            maxLines = 1
+                        )
+                    }
+                }
                 Button(
                     onClick = {
                         manageMenu = false
                         onClearPassword()
                     },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                ) { Text("清除密码") }
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.LockOpen,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "清除密码",
+                            style = MaterialTheme.typography.button,
+                            maxLines = 1
+                        )
+                    }
+                }
                 Button(
                     onClick = { manageMenu = false },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
@@ -289,14 +323,50 @@ fun PrivacyCenterScreen(
                         noteMenuTarget = null
                     },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                ) { Text("移出隐私中心") }
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.VisibilityOff,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "移出隐私中心",
+                            style = MaterialTheme.typography.button,
+                            maxLines = 1
+                        )
+                    }
+                }
                 Button(
                     onClick = {
                         onDelete(note.id)
                         noteMenuTarget = null
                     },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                ) { Text("删除（到回收站）") }
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    colors = ButtonDefaults.primaryButtonColors(
+                        backgroundColor = MaterialTheme.colors.error,
+                        contentColor = MaterialTheme.colors.onError
+                    )
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "删除（到回收站）",
+                            style = MaterialTheme.typography.button,
+                            maxLines = 1
+                        )
+                    }
+                }
                 Button(
                     onClick = { noteMenuTarget = null },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
