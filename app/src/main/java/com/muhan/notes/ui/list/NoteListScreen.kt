@@ -7,10 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -37,13 +36,13 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.TimeText
 import com.muhan.notes.data.Note
+import com.muhan.notes.ui.components.AppIconButton
 import com.muhan.notes.ui.components.NoteCard
 
 /**
  * 笔记列表页：顶部标题 + 全部笔记卡片 + 底部新建按钮。
- * 点击卡片编辑，长按卡片删除。
+ * 点击卡片编辑，长按卡片删除。无顶栏沉浸显示。
  */
 @Composable
 fun NoteListScreen(
@@ -57,7 +56,6 @@ fun NoteListScreen(
     var deleteTarget by remember { mutableStateOf<Note?>(null) }
 
     Scaffold(
-        timeText = { TimeText() },
         positionIndicator = {
             if (notes.isNotEmpty()) {
                 PositionIndicator(listState)
@@ -151,18 +149,11 @@ private fun AppHeader(onOpenSettings: () -> Unit) {
                 .weight(1f)
                 .padding(start = 6.dp)
         )
-        Button(
-            onClick = onOpenSettings,
-            modifier = Modifier.size(48.dp),
-            colors = ButtonDefaults.iconButtonColors(),
-            shape = CircleShape
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Settings,
-                contentDescription = "设置",
-                tint = MaterialTheme.colors.onSecondary
-            )
-        }
+        AppIconButton(
+            icon = Icons.Rounded.Settings,
+            contentDescription = "设置",
+            onClick = onOpenSettings
+        )
     }
 }
 
@@ -185,16 +176,22 @@ private fun NewNoteButton(onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .height(64.dp)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
-        Icon(
-            imageVector = Icons.Rounded.Add,
-            contentDescription = null
-        )
-        Text(
-            text = "新建笔记",
-            style = MaterialTheme.typography.button,
-            modifier = Modifier.padding(start = 6.dp)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Rounded.Add,
+                contentDescription = null,
+                modifier = Modifier
+                    .width(20.dp)
+                    .height(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "新建笔记",
+                style = MaterialTheme.typography.button
+            )
+        }
     }
 }

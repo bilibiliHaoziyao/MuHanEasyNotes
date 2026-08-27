@@ -6,21 +6,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.ButtonDefaults
-import androidx.wear.compose.material.Icon
-import androidx.wear.compose.material.MaterialTheme
 import com.muhan.notes.R
 
 /** 构造系统语音识别 Intent */
@@ -33,7 +27,8 @@ private fun buildRecognizerIntent(context: Context): Intent =
 
 /**
  * 麦克风按钮：调用系统语音识别，把识别结果通过 [onText] 回传。
- * 自动处理 RECORD_AUDIO 运行时权限申请。
+ * - 设备没有语音识别引擎时**不渲染**（隐藏语音输入）
+ * - 自动处理 RECORD_AUDIO 运行时权限申请
  */
 @Composable
 fun VoiceButton(
@@ -41,6 +36,9 @@ fun VoiceButton(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    // 无语音识别引擎时隐藏语音输入按钮
+    if (!SpeechRecognizer.isRecognitionAvailable(context)) return
 
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -61,7 +59,9 @@ fun VoiceButton(
         }
     }
 
-    Button(
+    AppIconButton(
+        icon = Icons.Rounded.Mic,
+        contentDescription = context.getString(R.string.voice_input),
         onClick = {
             val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                 PackageManager.PERMISSION_GRANTED
@@ -71,14 +71,6 @@ fun VoiceButton(
                 permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         },
-        modifier = modifier.size(48.dp),
-        colors = ButtonDefaults.iconButtonColors(),
-        shape = CircleShape
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.Mic,
-            contentDescription = context.getString(R.string.voice_input),
-            tint = MaterialTheme.colors.onSecondary
-        )
-    }
+        modifier = modifier
+    )
 }

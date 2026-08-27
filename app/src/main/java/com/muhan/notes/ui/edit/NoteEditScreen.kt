@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,8 +44,8 @@ import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.TimeText
 import com.muhan.notes.data.Note
+import com.muhan.notes.ui.components.AppIconButton
 import com.muhan.notes.ui.components.VoiceButton
 import com.muhan.notes.ui.theme.NOTE_COLOR_PALETTE
 import com.muhan.notes.ui.theme.asColor
@@ -123,7 +124,7 @@ fun NoteEditScreen(
     val scope = rememberCoroutineScope()
     val listState = rememberScalingLazyListState()
 
-    Scaffold(timeText = { TimeText() }) {
+    Scaffold {
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState
@@ -184,14 +185,20 @@ fun NoteEditScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .height(64.dp)
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
-                    Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
-                    Text(
-                        text = "保存",
-                        style = MaterialTheme.typography.button,
-                        modifier = Modifier.padding(start = 6.dp)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "保存", style = MaterialTheme.typography.button)
+                    }
                 }
             }
             if (savedNote != null) {
@@ -204,14 +211,20 @@ fun NoteEditScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .height(64.dp)
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
-                        Icon(imageVector = Icons.Rounded.Delete, contentDescription = null)
-                        Text(
-                            text = "删除",
-                            style = MaterialTheme.typography.button,
-                            modifier = Modifier.padding(start = 6.dp)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.Delete,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .width(20.dp)
+                                    .height(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "删除", style = MaterialTheme.typography.button)
+                        }
                     }
                 }
             }
@@ -224,21 +237,14 @@ private fun EditHeader(isEditing: Boolean, onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Button(
-            onClick = onBack,
-            modifier = Modifier.size(48.dp),
-            colors = ButtonDefaults.iconButtonColors(),
-            shape = CircleShape
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                contentDescription = "返回",
-                tint = MaterialTheme.colors.onSecondary
-            )
-        }
+        AppIconButton(
+            icon = Icons.AutoMirrored.Rounded.ArrowBack,
+            contentDescription = "返回",
+            onClick = onBack
+        )
         Text(
             text = if (isEditing) "编辑笔记" else "新建笔记",
             style = MaterialTheme.typography.title3,

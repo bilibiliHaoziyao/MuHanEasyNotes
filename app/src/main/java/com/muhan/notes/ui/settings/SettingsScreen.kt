@@ -5,19 +5,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.Icon
@@ -25,12 +22,12 @@ import androidx.wear.compose.material.InlineSlider
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
-import androidx.wear.compose.material.TimeText
 import com.muhan.notes.SettingsViewModel
+import com.muhan.notes.ui.components.AppIconButton
 import kotlin.math.roundToInt
 
 /**
- * 设置页：调整界面缩放大小、字体大小、自动保存开关。
+ * 设置页：调整界面缩放大小、字体大小、自动保存开关，以及关于页入口。
  */
 @Composable
 fun SettingsScreen(
@@ -40,11 +37,12 @@ fun SettingsScreen(
     onUiScaleChange: (Float) -> Unit,
     onFontScaleChange: (Float) -> Unit,
     onAutoSaveChange: (Boolean) -> Unit,
+    onOpenAbout: () -> Unit,
     onBack: () -> Unit
 ) {
     val listState = rememberScalingLazyListState()
 
-    Scaffold(timeText = { TimeText() }) {
+    Scaffold {
         ScalingLazyColumn(
             modifier = Modifier.fillMaxSize(),
             state = listState
@@ -84,7 +82,21 @@ fun SettingsScreen(
                     },
                     colors = if (autoSave) ChipDefaults.secondaryChipColors()
                     else ChipDefaults.primaryChipColors(),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+            item {
+                Chip(
+                    onClick = onOpenAbout,
+                    label = { Text(text = "关于") },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colors.onSurfaceVariant
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
             }
         }
@@ -96,21 +108,14 @@ private fun SettingsHeader(onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Button(
-            onClick = onBack,
-            modifier = Modifier.size(48.dp),
-            colors = ButtonDefaults.iconButtonColors(),
-            shape = CircleShape
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                contentDescription = "返回",
-                tint = MaterialTheme.colors.onSecondary
-            )
-        }
+        AppIconButton(
+            icon = Icons.AutoMirrored.Rounded.ArrowBack,
+            contentDescription = "返回",
+            onClick = onBack
+        )
         Text(
             text = "设置",
             style = MaterialTheme.typography.title3,

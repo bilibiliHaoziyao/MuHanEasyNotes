@@ -26,6 +26,7 @@ class NoteViewModel(private val repository: NoteRepository) : ViewModel() {
 
     /**
      * 统一的新建/更新：已存在则更新，否则插入。
+     * 标题可选：未填写标题时，自动取正文第一句话作为标题。
      * 返回保存后笔记的 id。
      */
     suspend fun saveNote(
@@ -37,13 +38,17 @@ class NoteViewModel(private val repository: NoteRepository) : ViewModel() {
     ): Long {
         val t = title.trim()
         val c = content.trim()
+        // 无标题时以正文第一行（截断 60 字）作为标题
+        val effectiveTitle = t.ifBlank {
+            c.lineSequence().firstOrNull()?.trim()?.take(60) ?: ""
+        }
         return if (existing == null) {
             repository.addNote(
-                Note(title = t, content = c, color = color, isPinned = isPinned)
+                Note(title = effectiveTitle, content = c, color = color, isPinned = isPinned)
             )
         } else {
             val updated = existing.copy(
-                title = t,
+                title = effectiveTitle,
                 content = c,
                 color = color,
                 isPinned = isPinned,
