@@ -26,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,21 +48,28 @@ import com.muhan.notes.data.Note
 import com.muhan.notes.ui.components.VoiceButton
 import com.muhan.notes.ui.theme.NOTE_COLOR_PALETTE
 import com.muhan.notes.ui.theme.asColor
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+private const val AUTO_SAVE_DEBOUNCE_MS = 1_200L
 
 /**
  * 新建 / 编辑笔记页。手表端通过语音输入文字，同时保留手动输入能力。
+ * 开启「自动保存」后，停止输入约 1.2 秒即自动保存。
  */
 @Composable
 fun NoteEditScreen(
     noteId: Long,
     loadNote: suspend (Long) -> Note?,
-    onSave: (Note?, String, String, Long, Boolean) -> Unit,
+    autoSave: Boolean,
+    onSave: suspend (Note?, String, String, Long, Boolean) -> Long,
     onDelete: (Long) -> Unit,
     onBack: () -> Unit
 ) {
     val isEditing = noteId > 0
 
-    var existingNote by remember(noteId) { mutableStateOf<Note?>(null) }
+    // savedNote 表示「最后一次已落库的笔记」；新建笔记在首次保存前为 null
+    var savedNote by remember(noteId) { mutableStateOf<Note?>(null) }
     var title by remember(noteId) { mutableStateOf("") }
     var content by remember(noteId) { mutableStateOf("") }
     var color by remember(noteId) { mutableStateOf(Note.DEFAULT_COLOR) }
@@ -69,8 +77,8 @@ fun NoteEditScreen(
 
     LaunchedEffect(noteId) {
         if (isEditing) {
-            existingNote = loadNote(noteId)
-            existingNote?.let { loaded ->
+            savedNote = loadNote(noteId)
+            savedNote?.let { loaded ->
                 title = loaded.title
                 content = loaded.content
                 color = loaded.color
@@ -79,6 +87,40 @@ fun NoteEditScreen(
         }
     }
 
+    // 自动保存：输入防抖，与已保存内容一致时跳过
+    LaunchedEffect(title, content, color, isPinned, autoSave) {
+        if (!autoSave) return@LaunchedEffect
+        val t = title.trim()
+        val c = content.trim()
+        if (t.isEmpty() && c.isEmpty()) return@LaunchedEffect
+        val unchanged = savedNote != null &&
+            savedNote!!.title == t &&
+            savedNote!!.content == c &&
+            savedNote!!.color == color &&
+            savedNote!!.isPinned == isPinned
+        if (unchanged) return@LaunchedEffect
+        delay(AUTO_SAVE_DEBOUNCE_MS)
+        val newId = onSave(savedNote, title, content, color, isPinned)
+        // 将返回的 id 还原为已保存的 Note，供后续比较与删除使用
+        savedNote = if (savedNote == null) {
+            Note(
+                id = newId,
+                title = title.trim(),
+                content = content.trim(),
+                color = color,
+                isPinned = isPinned
+            )
+        } else {
+            savedNote!!.copy(
+                title = title.trim(),
+                content = content.trim(),
+                color = color,
+                isPinned = isPinned
+            )
+        }
+    }
+
+    val scope = rememberCoroutineScope()
     val listState = rememberScalingLazyListState()
 
     Scaffold(timeText = { TimeText() }) {
@@ -134,7 +176,12 @@ fun NoteEditScreen(
             }
             item {
                 Button(
-                    onClick = { onSave(existingNote, title, content, color, isPinned) },
+                    onClick = {
+                        scope.launch {
+                            onSave(savedNote, title, content, color, isPinned)
+                            onBack()
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -147,10 +194,10 @@ fun NoteEditScreen(
                     )
                 }
             }
-            if (isEditing && existingNote != null) {
+            if (savedNote != null) {
                 item {
                     Button(
-                        onClick = { onDelete(existingNote!!.id) },
+                        onClick = { onDelete(savedNote!!.id) },
                         colors = ButtonDefaults.primaryButtonColors(
                             backgroundColor = MaterialTheme.colors.error,
                             contentColor = MaterialTheme.colors.onError

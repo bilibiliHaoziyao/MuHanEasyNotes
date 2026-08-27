@@ -24,25 +24,33 @@ class NoteViewModel(private val repository: NoteRepository) : ViewModel() {
 
     suspend fun getNote(id: Long): Note? = repository.getNote(id)
 
-    fun addNote(title: String, content: String, color: Long, isPinned: Boolean) {
-        viewModelScope.launch {
+    /**
+     * 统一的新建/更新：已存在则更新，否则插入。
+     * 返回保存后笔记的 id。
+     */
+    suspend fun saveNote(
+        existing: Note?,
+        title: String,
+        content: String,
+        color: Long,
+        isPinned: Boolean
+    ): Long {
+        val t = title.trim()
+        val c = content.trim()
+        return if (existing == null) {
             repository.addNote(
-                Note(title = title.trim(), content = content.trim(), color = color, isPinned = isPinned)
+                Note(title = t, content = c, color = color, isPinned = isPinned)
             )
-        }
-    }
-
-    fun updateNote(note: Note, title: String, content: String, color: Long, isPinned: Boolean) {
-        viewModelScope.launch {
-            repository.updateNote(
-                note.copy(
-                    title = title.trim(),
-                    content = content.trim(),
-                    color = color,
-                    isPinned = isPinned,
-                    updatedAt = System.currentTimeMillis()
-                )
+        } else {
+            val updated = existing.copy(
+                title = t,
+                content = c,
+                color = color,
+                isPinned = isPinned,
+                updatedAt = System.currentTimeMillis()
             )
+            repository.updateNote(updated)
+            updated.id
         }
     }
 

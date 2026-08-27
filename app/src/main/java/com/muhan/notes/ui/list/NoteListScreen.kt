@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,7 +50,8 @@ fun NoteListScreen(
     notes: List<Note>,
     onOpenNote: (Long) -> Unit,
     onNewNote: () -> Unit,
-    onDelete: (Long) -> Unit
+    onDelete: (Long) -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     val listState = rememberScalingLazyListState()
     var deleteTarget by remember { mutableStateOf<Note?>(null) }
@@ -64,7 +68,7 @@ fun NoteListScreen(
             modifier = Modifier.fillMaxSize(),
             state = listState
         ) {
-            item { AppHeader() }
+            item { AppHeader(onOpenSettings = onOpenSettings) }
             if (notes.isEmpty()) {
                 item { EmptyHint() }
             }
@@ -127,7 +131,7 @@ fun NoteListScreen(
 }
 
 @Composable
-private fun AppHeader() {
+private fun AppHeader(onOpenSettings: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -143,8 +147,22 @@ private fun AppHeader() {
             text = "慕寒轻松记",
             style = MaterialTheme.typography.title2,
             color = MaterialTheme.colors.onSurface,
-            modifier = Modifier.padding(start = 6.dp)
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 6.dp)
         )
+        Button(
+            onClick = onOpenSettings,
+            modifier = Modifier.size(48.dp),
+            colors = ButtonDefaults.iconButtonColors(),
+            shape = CircleShape
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Settings,
+                contentDescription = "设置",
+                tint = MaterialTheme.colors.onSecondary
+            )
+        }
     }
 }
 

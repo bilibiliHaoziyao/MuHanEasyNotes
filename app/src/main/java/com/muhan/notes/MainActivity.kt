@@ -9,13 +9,17 @@ import com.muhan.notes.ui.theme.MuHanTheme
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: NoteViewModel by viewModels { NoteViewModel.Factory }
+    private val noteViewModel: NoteViewModel by viewModels { NoteViewModel.Factory }
+    private val settingsViewModel: SettingsViewModel by viewModels { SettingsViewModel.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MuHanTheme {
-                NotesApp(viewModel = viewModel)
+                NotesApp(
+                    noteViewModel = noteViewModel,
+                    settingsViewModel = settingsViewModel
+                )
             }
         }
     }
