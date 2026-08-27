@@ -112,15 +112,21 @@ fun NoteListScreen(
                     },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.VisibilityOff,
-                        contentDescription = null
-                    )
-                    Text(
-                        text = "加入隐私中心",
-                        style = MaterialTheme.typography.button,
-                        modifier = Modifier.padding(start = 6.dp)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.VisibilityOff,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "加入隐私中心",
+                            style = MaterialTheme.typography.button,
+                            maxLines = 1
+                        )
+                    }
                 }
                 Button(
                     onClick = {
@@ -133,15 +139,21 @@ fun NoteListScreen(
                         contentColor = MaterialTheme.colors.onError
                     )
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = null
-                    )
-                    Text(
-                        text = "删除（到回收站）",
-                        style = MaterialTheme.typography.button,
-                        modifier = Modifier.padding(start = 6.dp)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .width(20.dp)
+                                .height(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "删除（到回收站）",
+                            style = MaterialTheme.typography.button,
+                            maxLines = 1
+                        )
+                    }
                 }
                 Button(
                     onClick = { noteMenuTarget = null },

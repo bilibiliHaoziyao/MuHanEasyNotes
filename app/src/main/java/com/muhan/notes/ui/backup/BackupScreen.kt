@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -37,6 +39,7 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.Chip
+import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
@@ -215,17 +218,41 @@ fun BackupScreen(
                         onClick = { onWebdavUpload(url, user, pass) { message = it } },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(imageVector = Icons.Rounded.CloudUpload, contentDescription = null)
-                        Text(text = "上传", style = MaterialTheme.typography.button,
-                            modifier = Modifier.padding(start = 4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.CloudUpload,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .width(20.dp)
+                                    .height(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "上传",
+                                style = MaterialTheme.typography.button,
+                                maxLines = 1
+                            )
+                        }
                     }
                     Button(
                         onClick = { onWebdavDownload(url, user, pass) { message = it } },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(imageVector = Icons.Rounded.CloudDownload, contentDescription = null)
-                        Text(text = "下载", style = MaterialTheme.typography.button,
-                            modifier = Modifier.padding(start = 4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.CloudDownload,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .width(20.dp)
+                                    .height(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "下载",
+                                style = MaterialTheme.typography.button,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
@@ -277,11 +304,24 @@ private fun ActionChip(
 ) {
     Chip(
         onClick = onClick,
-        label = { Text(label) },
-        icon = {
-            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colors.primary)
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.body1,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                softWrap = false
+            )
         },
-        modifier = modifier
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colors.primary,
+                modifier = Modifier.size(ChipDefaults.IconSize)
+            )
+        },
+        modifier = modifier.fillMaxWidth()
     )
 }
 
@@ -309,9 +349,21 @@ private fun BackupRow(file: File, onRestore: () -> Unit, modifier: Modifier = Mo
             )
         }
         Button(onClick = onRestore) {
-            Icon(imageVector = Icons.Rounded.Restore, contentDescription = null)
-            Text(text = "恢复", style = MaterialTheme.typography.button,
-                modifier = Modifier.padding(start = 4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Restore,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .width(20.dp)
+                        .height(20.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "恢复",
+                    style = MaterialTheme.typography.button,
+                    maxLines = 1
+                )
+            }
         }
     }
 }
