@@ -100,6 +100,17 @@ fun AboutScreen(onBack: () -> Unit) {
             }
             item {
                 Text(
+                    text = "该软件由 慕寒_Official 开发",
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                )
+            }
+            item {
+                Text(
                     text = "专为 Wear OS 智能手表设计的记事本\n支持语音输入、多彩笔记与置顶",
                     style = MaterialTheme.typography.body2,
                     color = MaterialTheme.colors.onSurfaceVariant,

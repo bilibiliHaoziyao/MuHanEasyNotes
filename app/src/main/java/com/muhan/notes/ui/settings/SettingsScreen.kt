@@ -97,8 +97,9 @@ fun SettingsScreen(
                     label = if (hasPrivacyPassword) "隐私中心（已设置密码）" else "隐私中心（设置密码）",
                     icon = Icons.Rounded.Lock,
                     onClick = onOpenPrivacy,
-                    iconTint = if (hasPrivacyPassword) MaterialTheme.colors.primary
-                    else MaterialTheme.colors.onSurfaceVariant
+                    iconTint = MaterialTheme.colors.onSurfaceVariant,
+                    colors = if (hasPrivacyPassword) ChipDefaults.secondaryChipColors()
+                    else ChipDefaults.primaryChipColors()
                 )
             }
             item {
@@ -200,7 +201,8 @@ private fun SettingChip(
                 style = MaterialTheme.typography.body1,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                softWrap = false
+                softWrap = false,
+                modifier = Modifier.fillMaxWidth()
             )
         },
         icon = {
