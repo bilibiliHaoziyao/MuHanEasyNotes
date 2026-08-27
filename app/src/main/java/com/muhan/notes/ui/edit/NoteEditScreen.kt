@@ -1,5 +1,15 @@
 package com.muhan.notes.ui.edit
 
+import android.Manifest
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.MediaStore
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,8 +33,10 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -33,7 +45,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Button
@@ -44,6 +58,7 @@ import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
+import com.muhan.notes.data.Attachment
 import com.muhan.notes.data.Note
 import com.muhan.notes.ui.components.AppIconButton
 import com.muhan.notes.ui.components.VoiceButton
@@ -56,7 +71,7 @@ private const val AUTO_SAVE_DEBOUNCE_MS = 1_200L
 
 /**
  * 新建 / 编辑笔记页。手表端通过语音输入文字，同时保留手动输入能力。
- * 开启「自动保存」后，停止输入约 1.2 秒即自动保存。
+ * 支持添加图片、视频附件，以及软件内录音；开启「自动保存」后停止输入约 1.2 秒即自动保存。
  */
 @Composable
 fun NoteEditScreen(
@@ -65,9 +80,19 @@ fun NoteEditScreen(
     autoSave: Boolean,
     onSave: suspend (Note?, String, String, Long, Boolean) -> Long,
     onDelete: (Long) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    loadAttachments: suspend (Long) -> List<Attachment>,
+    isRecording: Boolean,
+    onStartRecording: () -> Unit,
+    onStopRecording: (onResult: (String?) -> Unit) -> Unit,
+    onAddAttachment: (Long, String, Uri) -> Unit,
+    onAddLocalAttachment: (Long, String, String) -> Unit,
+    onDeleteAttachment: (Long) -> Unit,
+    onTouchNote: (Long) -> Unit
 ) {
     val isEditing = noteId > 0
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // savedNote 表示「最后一次已落库的笔记」；新建笔记在首次保存前为 null
     var savedNote by remember(noteId) { mutableStateOf<Note?>(null) }
@@ -75,6 +100,11 @@ fun NoteEditScreen(
     var content by remember(noteId) { mutableStateOf("") }
     var color by remember(noteId) { mutableStateOf(Note.DEFAULT_COLOR) }
     var isPinned by remember(noteId) { mutableStateOf(false) }
+
+    var attachments by remember(noteId) { mutableStateOf<List<Attachment>>(emptyList()) }
+    var previewAttachment by remember { mutableStateOf<Attachment?>(null) }
+    var showVideoOptions by remember { mutableStateOf(false) }
+    var recordingSeconds by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(noteId) {
         if (isEditing) {
@@ -84,7 +114,33 @@ fun NoteEditScreen(
                 content = loaded.content
                 color = loaded.color
                 isPinned = loaded.isPinned
+                attachments = loadAttachments(loaded.id)
             }
+        }
+    }
+
+    /**
+     * 确保笔记已落库：新建笔记首次添加附件前先保存，拿到真实 id。
+     */
+    suspend fun ensureSaved(): Long? {
+        savedNote?.let { return it.id }
+        val newId = onSave(null, title, content, color, isPinned)
+        savedNote = Note(
+            id = newId,
+            title = title.trim(),
+            content = content.trim(),
+            color = color,
+            isPinned = isPinned
+        )
+        return newId
+    }
+
+    /** 附件写入数据库后稍等片刻再刷新列表 */
+    fun reloadAttachmentsDelayed() {
+        scope.launch {
+            delay(500)
+            val id = savedNote?.id ?: return@launch
+            attachments = loadAttachments(id)
         }
     }
 
@@ -121,8 +177,104 @@ fun NoteEditScreen(
         }
     }
 
-    val scope = rememberCoroutineScope()
+    // 录音计时
+    LaunchedEffect(isRecording) {
+        recordingSeconds = 0
+        if (isRecording) {
+            while (true) {
+                delay(1_000)
+                recordingSeconds++
+            }
+        }
+    }
+
+    // 离开编辑页时若仍在录音，则停止并丢弃
+    DisposableEffect(Unit) {
+        onDispose {
+            onStopRecording { }
+        }
+    }
+
     val listState = rememberScalingLazyListState()
+
+    // 选择图片
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { picked ->
+            scope.launch {
+                val id = ensureSaved() ?: return@launch
+                onAddAttachment(id, Attachment.TYPE_IMAGE, picked)
+                onTouchNote(id)
+                reloadAttachmentsDelayed()
+            }
+        }
+    }
+
+    // 相册选择视频
+    val videoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { picked ->
+            scope.launch {
+                val id = ensureSaved() ?: return@launch
+                onAddAttachment(id, Attachment.TYPE_VIDEO, picked)
+                onTouchNote(id)
+                reloadAttachmentsDelayed()
+            }
+        }
+    }
+
+    // 系统相机拍摄视频
+    val videoCamera = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                scope.launch {
+                    val id = ensureSaved() ?: return@launch
+                    onAddAttachment(id, Attachment.TYPE_VIDEO, uri)
+                    onTouchNote(id)
+                    reloadAttachmentsDelayed()
+                }
+            }
+        }
+    }
+
+    // 录音权限
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) onStartRecording()
+    }
+
+    fun pickVideoFromCamera() {
+        try {
+            videoCamera.launch(Intent(MediaStore.ACTION_VIDEO_CAPTURE))
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "设备不支持拍摄视频", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun onRecordAudio() {
+        if (isRecording) {
+            onStopRecording { path ->
+                if (path != null) {
+                    scope.launch {
+                        val id = ensureSaved() ?: return@launch
+                        onAddLocalAttachment(id, Attachment.TYPE_AUDIO, path)
+                        onTouchNote(id)
+                        reloadAttachmentsDelayed()
+                    }
+                }
+            }
+        } else {
+            val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                PackageManager.PERMISSION_GRANTED
+            if (granted) onStartRecording()
+            else audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     Scaffold {
         ScalingLazyColumn(
@@ -130,7 +282,13 @@ fun NoteEditScreen(
             state = listState
         ) {
             item {
-                EditHeader(isEditing = isEditing, onBack = onBack)
+                EditHeader(
+                    isEditing = isEditing,
+                    onBack = {
+                        if (isRecording) onStopRecording { }
+                        onBack()
+                    }
+                )
             }
             item {
                 FieldCard(
@@ -173,6 +331,22 @@ fun NoteEditScreen(
                     colors = if (isPinned) ChipDefaults.secondaryChipColors()
                     else ChipDefaults.primaryChipColors(),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+            item {
+                MediaSection(
+                    attachments = attachments,
+                    isRecording = isRecording,
+                    recordingSeconds = recordingSeconds,
+                    onAddImage = { imagePicker.launch("image/*") },
+                    onAddVideo = { showVideoOptions = true },
+                    onRecordAudio = { onRecordAudio() },
+                    onPlay = { previewAttachment = it },
+                    onDelete = { attachment ->
+                        onDeleteAttachment(attachment.id)
+                        attachments = attachments.filterNot { it.id == attachment.id }
+                    },
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
             item {
@@ -229,6 +403,52 @@ fun NoteEditScreen(
                 }
             }
         }
+    }
+
+    // 视频来源选择（拍摄 / 相册）
+    if (showVideoOptions) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showVideoOptions = false }) {
+            Column(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colors.surface)
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "添加视频",
+                    style = MaterialTheme.typography.title3,
+                    color = MaterialTheme.colors.onSurface,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Button(
+                    onClick = {
+                        showVideoOptions = false
+                        pickVideoFromCamera()
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Text("拍摄视频")
+                }
+                Button(
+                    onClick = {
+                        showVideoOptions = false
+                        videoPicker.launch("video/*")
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Text("从相册选择")
+                }
+            }
+        }
+    }
+
+    // 附件预览：图片全屏 / 视频、音频弹窗播放
+    previewAttachment?.let { attachment ->
+        MediaPreviewDialog(
+            attachment = attachment,
+            onDismiss = { previewAttachment = null }
+        )
     }
 }
 

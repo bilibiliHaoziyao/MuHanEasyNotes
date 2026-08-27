@@ -24,8 +24,8 @@ android {
         applicationId = "com.muhan.notes"
         minSdk = 25
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.2.0-beta"
+        versionCode = 5
+        versionName = "1.2.1-beta"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -94,6 +94,8 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.datastore.preferences)
+
+    implementation(libs.coil.compose)
 
     implementation(libs.kotlinx.coroutines.android)
 }

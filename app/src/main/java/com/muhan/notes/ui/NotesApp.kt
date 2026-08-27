@@ -47,6 +47,7 @@ fun NotesApp(
     val uiScale by settingsViewModel.uiScale.collectAsStateWithLifecycle()
     val fontScale by settingsViewModel.fontScale.collectAsStateWithLifecycle()
     val autoSave by settingsViewModel.autoSave.collectAsStateWithLifecycle()
+    val isRecording by noteViewModel.isRecording.collectAsStateWithLifecycle()
     val baseDensity = LocalDensity.current
     val scaledDensity = Density(
         density = baseDensity.density * uiScale,
@@ -101,7 +102,15 @@ fun NotesApp(
                                 noteViewModel.deleteNote(id)
                                 navController.popBackStack()
                             },
-                            onBack = { navController.popBackStack() }
+                            onBack = { navController.popBackStack() },
+                            loadAttachments = noteViewModel::getAttachments,
+                            isRecording = isRecording,
+                            onStartRecording = noteViewModel::startRecording,
+                            onStopRecording = noteViewModel::stopRecording,
+                            onAddAttachment = noteViewModel::addAttachment,
+                            onAddLocalAttachment = noteViewModel::addLocalAttachment,
+                            onDeleteAttachment = noteViewModel::deleteAttachment,
+                            onTouchNote = noteViewModel::touchNote
                         )
                     }
                 }

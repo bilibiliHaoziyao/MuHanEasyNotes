@@ -4,11 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.wear.compose.material.MaterialTheme
 
 /**
- * 应用主题。Wear OS 手表通常为深色环境，直接使用 Wear Material 默认配色。
+ * 应用主题：统一品牌配色（深色 + 青绿主色）。
  */
 @Composable
 fun MuHanTheme(content: @Composable () -> Unit) {
     MaterialTheme(
+        colors = MuHanColors,
         content = content
     )
 }

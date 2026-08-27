@@ -1,35 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 应用图标前景：一张便签纸，上面有几行“笔记”文字 -->
+<!-- 应用图标前景：白色铅笔，与「关于」页图标（青绿圆 + EditNote 铅笔）保持一致 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- 便签纸本体（居中，留出安全区） -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M39,26 h30 a6,6 0 0 1 6,6 v44 a6,6 0 0 1 -6,6 h-30 a6,6 0 0 1 -6,-6 v-44 a6,6 0 0 1 6,-6 z" />
-
-    <!-- 便签纸右上角折角 -->
-    <path
-        android:fillColor="#E0F2F1"
-        android:pathData="M69,26 a6,6 0 0 1 6,6 v0 l-10,10 h-6 z" />
-
-    <!-- 三行“笔记”文字 -->
-    <path
-        android:pathData="M42,42 h20"
-        android:strokeColor="#FF26A69A"
-        android:strokeWidth="3.5"
-        android:strokeLineCap="round" />
-    <path
-        android:pathData="M42,53 h28"
-        android:strokeColor="#FF26A69A"
-        android:strokeWidth="3.5"
-        android:strokeLineCap="round" />
-    <path
-        android:pathData="M42,64 h14"
-        android:strokeColor="#FF26A69A"
-        android:strokeWidth="3.5"
-        android:strokeLineCap="round" />
+    <!-- 经典 Material「edit」铅笔图标，缩放到安全区内居中 -->
+    <group
+        android:scaleX="2.5"
+        android:scaleY="2.5"
+        android:translateX="24.4"
+        android:translateY="23.75">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z" />
+    </group>
 </vector>
